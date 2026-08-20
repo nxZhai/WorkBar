@@ -314,19 +314,19 @@ private struct TaskRow: View {
                 .accessibilityLabel("任务菜单")
             }
 
-            if task.budgetSeconds > 0 {
-                ProgressView(
-                    value: min(1, max(0, self.model.elapsed(for: task.id) / task.budgetSeconds)))
-                    .tint(self.model.remaining(for: task.id) < 0 ? .orange : .accentColor)
-                    .controlSize(.small)
-            }
         }
         .padding(12)
-        .background(
-            self.model.isActive(task.id)
-                ? Color.accentColor.opacity(0.12)
-                : Color.primary.opacity(0.045),
-            in: RoundedRectangle(cornerRadius: 14))
+        .background {
+            GeometryReader { proxy in
+                let shape = RoundedRectangle(cornerRadius: 14)
+                ZStack(alignment: .leading) {
+                    shape.fill(self.rowBackground)
+                    shape.fill(self.progressColor.opacity(0.14))
+                        .frame(width: proxy.size.width * self.remainingFraction)
+                }
+                .clipShape(shape)
+            }
+        }
         .overlay {
             if self.model.isActive(task.id) {
                 RoundedRectangle(cornerRadius: 14)
@@ -341,6 +341,24 @@ private struct TaskRow: View {
             Button("删除", role: .destructive) { self.model.deleteTask(task.id) }
             Button("取消", role: .cancel) {}
         }
+    }
+
+    private var remainingFraction: Double {
+        guard task.status != .completed, task.budgetSeconds > 0 else { return 0 }
+        return min(1, max(0, self.model.remaining(for: task.id) / task.budgetSeconds))
+    }
+
+    private var progressColor: Color {
+        self.model.remaining(for: task.id) < 0 ? .orange : .accentColor
+    }
+
+    private var rowBackground: Color {
+        if self.model.remaining(for: task.id) < 0 {
+            return .orange.opacity(0.10)
+        }
+        return self.model.isActive(task.id)
+            ? Color.accentColor.opacity(0.12)
+            : Color.primary.opacity(0.045)
     }
 }
 
