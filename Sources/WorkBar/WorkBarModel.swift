@@ -8,9 +8,12 @@ final class WorkBarModel {
     var engine: TimerEngine
     var now: Date
     var errorMessage: String?
+    var importMessage: String?
+    var isImportingReminders = false
     var onChange: (@MainActor () -> Void)?
 
     private let store: StateStore
+    private let remindersImporter = RemindersImporter()
     private var ticker: Timer?
     private var persistenceDisabled = false
 
@@ -124,6 +127,40 @@ final class WorkBarModel {
     func setTotalBudget(minutes: Double) {
         self.engine.setTotalBudget(seconds: max(0, minutes) * 60)
         self.persist()
+    }
+
+    func importReminders() {
+        guard !self.isImportingReminders else { return }
+        self.isImportingReminders = true
+        self.importMessage = nil
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { self.isImportingReminders = false }
+            do {
+                let reminders = try await self.remindersImporter.fetchIncompleteReminders()
+                let existingIDs = Set(self.engine.today.tasks.compactMap(\.externalID))
+                var added = 0
+                for reminder in reminders where !existingIDs.contains(reminder.id) {
+                    if self.engine.addTask(
+                        title: reminder.title,
+                        budgetSeconds: 30 * 60,
+                        externalID: reminder.id) != nil
+                    {
+                        added += 1
+                    }
+                }
+                if added > 0 {
+                    self.persist()
+                }
+                self.importMessage = added == 0
+                    ? "没有新的未完成提醒事项。"
+                    : "已导入 \(added) 个提醒事项，默认预算 30 分钟。"
+                self.onChange?()
+            } catch {
+                self.errorMessage = error.localizedDescription
+                self.onChange?()
+            }
+        }
     }
 
     func shutdown() {

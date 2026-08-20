@@ -16,6 +16,7 @@ public struct TaskItem: Codable, Equatable, Identifiable, Sendable {
     public var elapsedSeconds: TimeInterval
     public var status: TaskStatus
     public var sortOrder: Int
+    public var externalID: String?
 
     public init(
         id: UUID = UUID(),
@@ -23,7 +24,8 @@ public struct TaskItem: Codable, Equatable, Identifiable, Sendable {
         budgetSeconds: TimeInterval,
         elapsedSeconds: TimeInterval = 0,
         status: TaskStatus = .pending,
-        sortOrder: Int = 0)
+        sortOrder: Int = 0,
+        externalID: String? = nil)
     {
         self.id = id
         self.title = title
@@ -31,6 +33,7 @@ public struct TaskItem: Codable, Equatable, Identifiable, Sendable {
         self.elapsedSeconds = max(0, elapsedSeconds)
         self.status = status
         self.sortOrder = sortOrder
+        self.externalID = externalID
     }
 }
 

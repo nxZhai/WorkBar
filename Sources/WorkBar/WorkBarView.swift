@@ -80,6 +80,26 @@ struct WorkBarView: View {
 
                 Spacer()
             }
+
+            Button {
+                self.model.importReminders()
+            } label: {
+                if self.model.isImportingReminders {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("正在读取提醒事项…")
+                } else {
+                    Label("从提醒事项导入未完成任务", systemImage: "checklist")
+                }
+            }
+            .disabled(self.model.isImportingReminders)
+            .help("只导入新的未完成提醒事项，不会修改提醒事项")
+
+            if let importMessage = self.model.importMessage {
+                Text(importMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(14)
         .frame(width: 380, height: 460)

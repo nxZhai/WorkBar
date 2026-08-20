@@ -26,7 +26,11 @@ public struct TimerEngine: Sendable {
         self.state.activeTimer?.taskID
     }
 
-    public mutating func addTask(title: String, budgetSeconds: TimeInterval) -> UUID? {
+    public mutating func addTask(
+        title: String,
+        budgetSeconds: TimeInterval,
+        externalID: String? = nil) -> UUID?
+    {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
         var plan = self.ensureSelectedPlan()
@@ -35,7 +39,8 @@ public struct TimerEngine: Sendable {
             id: id,
             title: trimmed,
             budgetSeconds: budgetSeconds,
-            sortOrder: plan.tasks.count))
+            sortOrder: plan.tasks.count,
+            externalID: externalID))
         self.state.dayPlans[plan.dateKey] = plan
         return id
     }

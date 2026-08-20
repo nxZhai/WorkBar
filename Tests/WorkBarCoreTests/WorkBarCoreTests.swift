@@ -109,3 +109,13 @@ func stateStoreRejectsCorruptedJsonWithoutReplacingIt() throws {
         #expect(try Data(contentsOf: store.fileURL) == Data("{not-json".utf8))
     }
 }
+
+@Test
+func importedTaskKeepsExternalReminderIdentifier() {
+    var engine = TimerEngine(now: start, calendar: calendar)
+    let taskID = engine.addTask(
+        title: "From Reminders",
+        budgetSeconds: 30 * 60,
+        externalID: "reminder-123")!
+    #expect(engine.today.tasks.first(where: { $0.id == taskID })?.externalID == "reminder-123")
+}
