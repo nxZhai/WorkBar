@@ -138,14 +138,6 @@ struct WorkBarView: View {
                 .frame(width: 34, height: 34)
                 .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 10))
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("专注工作台")
-                    .font(.title3.weight(.semibold))
-                Text(self.model.engine.state.selectedDate)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
             Spacer()
 
             Button(action: self.onQuit) {
