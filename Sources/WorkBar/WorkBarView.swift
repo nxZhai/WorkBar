@@ -11,7 +11,7 @@ struct WorkBarView: View {
     @State private var editingTask: TaskItem?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             self.headerView
             self.summaryView
 
@@ -49,10 +49,10 @@ struct WorkBarView: View {
                     "今天还没有任务",
                     systemImage: "checklist",
                     description: Text("添加任务，或从提醒事项同步。"))
-                    .frame(maxWidth: .infinity, minHeight: 120)
+                    .frame(maxWidth: .infinity, minHeight: 80)
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 9) {
+                    LazyVStack(spacing: 6) {
                         ForEach(self.model.tasks) { task in
                             TaskRow(
                                 task: task,
@@ -62,11 +62,11 @@ struct WorkBarView: View {
                         }
                     }
                 }
-                .frame(maxHeight: 240)
+                .frame(maxHeight: 190)
                 .scrollIndicators(.hidden)
             }
 
-            VStack(spacing: 6) {
+            VStack(spacing: 4) {
                 self.actionRow(title: "添加任务", systemImage: "plus") {
                     self.showingAddTask = true
                 }
@@ -85,9 +85,10 @@ struct WorkBarView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(18)
-        .frame(width: 420, height: 580)
-        .background(.regularMaterial)
+        .padding(12)
+        .frame(width: 380, height: 520)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
         .sheet(isPresented: self.$showingAddTask) {
             TaskEditorView(title: "添加任务", onSave: { title, minutes in
                 self.model.addTask(title: title, budgetMinutes: minutes)
@@ -118,11 +119,11 @@ struct WorkBarView: View {
     }
 
     private var headerView: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             Image(systemName: "hourglass")
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(.white)
-                .frame(width: 34, height: 34)
+                .frame(width: 30, height: 30)
                 .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 10))
 
             Spacer()
@@ -139,7 +140,7 @@ struct WorkBarView: View {
     private var summaryView: some View {
         let summary = self.model.summary
         let progress = min(summary.totalBudgetSeconds, summary.elapsedSeconds)
-        return VStack(alignment: .leading, spacing: 13) {
+        return VStack(alignment: .leading, spacing: 9) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("今日工作预算")
@@ -167,8 +168,8 @@ struct WorkBarView: View {
             }
             .font(.caption)
         }
-        .padding(15)
-        .background(Color.accentColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 16))
+        .padding(12)
+        .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 13))
     }
 
     private func actionRow(
@@ -186,8 +187,8 @@ struct WorkBarView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 10))
         }
@@ -249,8 +250,8 @@ private struct TaskRow: View {
     @State private var isExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
                 Button {
                     self.model.setCompleted(task.status != .completed, taskID: task.id)
                 } label: {
@@ -318,10 +319,10 @@ private struct TaskRow: View {
             }
 
         }
-        .padding(12)
+        .padding(9)
         .background {
             GeometryReader { proxy in
-                let shape = RoundedRectangle(cornerRadius: 14)
+                let shape = RoundedRectangle(cornerRadius: 11)
                 ZStack(alignment: .leading) {
                     shape.fill(self.rowBackground)
                     shape.fill(self.progressColor.opacity(0.14))
@@ -332,7 +333,7 @@ private struct TaskRow: View {
         }
         .overlay {
             if self.model.isActive(task.id) {
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 11)
                     .stroke(Color.accentColor.opacity(0.45), lineWidth: 1)
             }
         }

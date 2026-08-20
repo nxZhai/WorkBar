@@ -44,7 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         self.panel = WorkBarPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 580),
+            contentRect: NSRect(x: 0, y: 0, width: 380, height: 520),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: true)
@@ -53,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.panel.backgroundColor = .clear
         self.panel.isOpaque = false
         self.panel.hasShadow = true
-        self.panel.hidesOnDeactivate = true
+        self.panel.hidesOnDeactivate = false
         self.panel.isReleasedWhenClosed = false
         self.panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         self.panel.contentViewController = NSHostingController(
@@ -105,6 +105,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.panel.setFrameOrigin(NSPoint(x: x, y: y))
         self.panel.orderFrontRegardless()
         self.panel.makeKey()
+        if let outsideClickMonitor {
+            NSEvent.removeMonitor(outsideClickMonitor)
+        }
         self.outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
                 guard let self, !self.panel.frame.contains(NSEvent.mouseLocation) else { return }
@@ -114,6 +117,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func closePanel() {
         self.panel?.orderOut(nil)
+        self.panel?.resignKey()
         if let outsideClickMonitor {
             NSEvent.removeMonitor(outsideClickMonitor)
             self.outsideClickMonitor = nil
