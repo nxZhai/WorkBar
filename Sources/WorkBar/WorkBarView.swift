@@ -268,6 +268,7 @@ private struct TaskRow: View {
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(alignment: .firstTextBaseline, spacing: 5) {
                             Text(task.title)
+                                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                                 .font(.callout)
                                 .fontWeight(self.model.isActive(task.id) ? .semibold : .regular)
                                 .strikethrough(task.status == .completed)
@@ -277,6 +278,7 @@ private struct TaskRow: View {
                                 .font(.caption2.weight(.medium))
                                 .foregroundStyle(.secondary)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         Text("预算 \(workBarDuration(task.budgetSeconds)) · 已用 \(workBarDuration(self.model.elapsed(for: task.id)))")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
@@ -289,34 +291,36 @@ private struct TaskRow: View {
                 .accessibilityValue(self.isExpanded ? "已展开" : "已收起")
                 .accessibilityHint(self.isExpanded ? "点击收起完整内容" : "点击展开完整内容")
 
-                Spacer()
+                HStack(spacing: 6) {
+                    Text(workBarRemaining(self.model.remaining(for: task.id)))
+                        .font(.system(.caption, design: .monospaced).weight(.medium))
+                        .foregroundStyle(self.model.remaining(for: task.id) < 0 ? .orange : .secondary)
+                        .frame(minWidth: 34, alignment: .trailing)
 
-                Text(workBarRemaining(self.model.remaining(for: task.id)))
-                    .font(.system(.caption, design: .monospaced).weight(.medium))
-                    .foregroundStyle(self.model.remaining(for: task.id) < 0 ? .orange : .secondary)
+                    Button {
+                        self.model.toggle(task.id)
+                    } label: {
+                        Image(systemName: self.model.isActive(task.id) ? "pause.fill" : "play.fill")
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(task.status == .completed)
+                    .accessibilityLabel(self.model.isActive(task.id) ? "暂停任务" : "开始任务")
 
-                Button {
-                    self.model.toggle(task.id)
-                } label: {
-                    Image(systemName: self.model.isActive(task.id) ? "pause.fill" : "play.fill")
+                    Menu {
+                        Button("编辑", action: self.onEdit)
+                        Button("上移") { self.model.moveTask(task.id, by: -1) }
+                            .disabled(self.index == 0)
+                        Button("下移") { self.model.moveTask(task.id, by: 1) }
+                            .disabled(self.index == self.model.tasks.count - 1)
+                        Divider()
+                        Button("删除", role: .destructive) { self.showingDeleteConfirmation = true }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
+                    .menuStyle(.borderlessButton)
+                    .accessibilityLabel("任务菜单")
                 }
-                .buttonStyle(.borderless)
-                .disabled(task.status == .completed)
-                .accessibilityLabel(self.model.isActive(task.id) ? "暂停任务" : "开始任务")
-
-                Menu {
-                    Button("编辑", action: self.onEdit)
-                    Button("上移") { self.model.moveTask(task.id, by: -1) }
-                        .disabled(self.index == 0)
-                    Button("下移") { self.model.moveTask(task.id, by: 1) }
-                        .disabled(self.index == self.model.tasks.count - 1)
-                    Divider()
-                    Button("删除", role: .destructive) { self.showingDeleteConfirmation = true }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                }
-                .menuStyle(.borderlessButton)
-                .accessibilityLabel("任务菜单")
+                .fixedSize(horizontal: true, vertical: false)
             }
 
         }
