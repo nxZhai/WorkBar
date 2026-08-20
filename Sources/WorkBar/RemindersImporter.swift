@@ -11,6 +11,8 @@ enum RemindersImportError: LocalizedError {
     case denied
     case restricted
     case requestFailed(String)
+    case reminderNotFound
+    case updateFailed(String)
 
     var errorDescription: String? {
         switch self {
@@ -20,6 +22,10 @@ enum RemindersImportError: LocalizedError {
             "当前 macOS 用户无法访问提醒事项。"
         case let .requestFailed(message):
             "无法读取提醒事项：\(message)"
+        case .reminderNotFound:
+            "找不到对应的提醒事项，可能已被删除。"
+        case let .updateFailed(message):
+            "无法更新提醒事项：\(message)"
         }
     }
 }
@@ -69,6 +75,18 @@ final class RemindersImporter: @unchecked Sendable {
                 }
                 continuation.resume(returning: items)
             }
+        }
+    }
+
+    func setReminderCompleted(_ completed: Bool, id: String) throws {
+        guard let reminder = self.eventStore.calendarItem(withIdentifier: id) as? EKReminder else {
+            throw RemindersImportError.reminderNotFound
+        }
+        reminder.isCompleted = completed
+        do {
+            try self.eventStore.save(reminder, commit: true)
+        } catch {
+            throw RemindersImportError.updateFailed(error.localizedDescription)
         }
     }
 }

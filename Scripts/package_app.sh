@@ -37,9 +37,9 @@ cat > "$app_dir/Contents/Info.plist" <<'PLIST'
     <key>LSUIElement</key>
     <true/>
     <key>NSRemindersFullAccessUsageDescription</key>
-    <string>WorkBar 读取未完成提醒事项，将它们导入为今日工作任务。</string>
+    <string>WorkBar 读取未完成提醒事项，并同步任务完成状态。</string>
     <key>NSRemindersUsageDescription</key>
-    <string>WorkBar 读取未完成提醒事项，将它们导入为今日工作任务。</string>
+    <string>WorkBar 读取未完成提醒事项，并同步任务完成状态。</string>
 </dict>
 </plist>
 PLIST

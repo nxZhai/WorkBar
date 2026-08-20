@@ -117,8 +117,21 @@ final class WorkBarModel {
     }
 
     func setCompleted(_ completed: Bool, taskID: UUID) {
-        _ = self.engine.setCompleted(completed, id: taskID, now: Date())
+        guard self.engine.setCompleted(completed, id: taskID, now: Date()) else { return }
         self.persist()
+
+        guard let externalID = self.engine.today.tasks.first(where: { $0.id == taskID })?.externalID else {
+            return
+        }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                try self.remindersImporter.setReminderCompleted(completed, id: externalID)
+            } catch {
+                self.errorMessage = error.localizedDescription
+                self.onChange?()
+            }
+        }
     }
 
     func moveTask(_ taskID: UUID, by offset: Int) {
