@@ -7,6 +7,7 @@ struct WorkBarView: View {
 
     @State private var showingAddTask = false
     @State private var showingBudgetEditor = false
+    @State private var showingHistory = false
     @State private var editingTask: TaskItem?
 
     var body: some View {
@@ -71,6 +72,12 @@ struct WorkBarView: View {
                     Label("今日预算", systemImage: "clock")
                 }
 
+                Button {
+                    self.showingHistory = true
+                } label: {
+                    Label("历史", systemImage: "calendar")
+                }
+
                 Spacer()
             }
         }
@@ -100,6 +107,9 @@ struct WorkBarView: View {
                     self.model.setTotalBudget(minutes: minutes)
                 })
         }
+        .sheet(isPresented: self.$showingHistory) {
+            HistoryView(plans: self.model.history)
+        }
     }
 
     private var summaryView: some View {
@@ -124,6 +134,50 @@ struct WorkBarView: View {
             }
             .font(.caption)
         }
+    }
+}
+
+private struct HistoryView: View {
+    let plans: [DayPlan]
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("历史记录")
+                    .font(.headline)
+                Spacer()
+                Button("完成") { self.dismiss() }
+            }
+
+            if self.plans.isEmpty {
+                ContentUnavailableView("还没有历史记录", systemImage: "calendar")
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 8) {
+                        ForEach(self.plans, id: \.dateKey) { plan in
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text(plan.dateKey)
+                                        .fontWeight(.semibold)
+                                    Spacer()
+                                    Text("计划 \(workBarDuration(plan.totalBudgetSeconds))")
+                                        .foregroundStyle(.secondary)
+                                }
+                                Text("已用 \(workBarDuration(plan.tasks.reduce(0) { $0 + $1.elapsedSeconds })) · \(plan.tasks.count) 个任务")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(9)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 9))
+                        }
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .frame(width: 330, height: 360)
     }
 }
 

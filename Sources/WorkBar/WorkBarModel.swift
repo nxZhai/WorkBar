@@ -17,6 +17,7 @@ final class WorkBarModel {
     init(now: Date = Date(), store: StateStore = StateStore()) {
         self.store = store
         self.now = now
+        let hadStateFile = FileManager.default.fileExists(atPath: store.fileURL.path)
 
         do {
             let state = try store.loadOrCreate(now: now)
@@ -33,7 +34,7 @@ final class WorkBarModel {
 
         let oldState = self.engine.state
         self.engine.settle(at: now)
-        if oldState != self.engine.state {
+        if oldState != self.engine.state || !hadStateFile {
             self.persist()
         }
         self.startTicker()
@@ -45,6 +46,12 @@ final class WorkBarModel {
 
     var summary: DaySummary {
         self.engine.summary(at: self.now)
+    }
+
+    var history: [DayPlan] {
+        self.engine.state.dayPlans.values
+            .filter { $0.dateKey != self.engine.state.selectedDate }
+            .sorted { $0.dateKey > $1.dateKey }
     }
 
     func isActive(_ taskID: UUID) -> Bool {
