@@ -62,34 +62,21 @@ struct WorkBarView: View {
                         }
                     }
                 }
-                .frame(maxHeight: 300)
+                .frame(maxHeight: 240)
                 .scrollIndicators(.hidden)
             }
 
-            HStack(spacing: 10) {
-                Button {
+            VStack(spacing: 6) {
+                self.actionRow(title: "添加任务", systemImage: "plus") {
                     self.showingAddTask = true
-                } label: {
-                    Label("添加任务", systemImage: "plus")
                 }
-                .buttonStyle(.borderedProminent)
                 .keyboardShortcut("n")
-
-                Button {
+                self.actionRow(title: "今日预算", systemImage: "clock") {
                     self.showingBudgetEditor = true
-                } label: {
-                    Label("预算", systemImage: "clock")
                 }
-                .buttonStyle(.bordered)
-
-                Button {
+                self.actionRow(title: "历史", systemImage: "calendar") {
                     self.showingHistory = true
-                } label: {
-                    Label("历史", systemImage: "calendar")
                 }
-                .buttonStyle(.bordered)
-
-                Spacer()
             }
 
             if let importMessage = self.model.importMessage {
@@ -182,6 +169,30 @@ struct WorkBarView: View {
         }
         .padding(15)
         .background(Color.accentColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func actionRow(
+        title: String,
+        systemImage: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: systemImage)
+                    .frame(width: 20)
+                Text(title)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
     }
 }
 
