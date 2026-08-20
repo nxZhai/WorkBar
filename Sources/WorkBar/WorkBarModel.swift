@@ -41,6 +41,7 @@ final class WorkBarModel {
             self.persist()
         }
         self.startTicker()
+        self.syncRemindersOnLaunch()
     }
 
     var tasks: [TaskItem] {
@@ -130,6 +131,14 @@ final class WorkBarModel {
     }
 
     func importReminders() {
+        self.syncReminders()
+    }
+
+    private func syncRemindersOnLaunch() {
+        self.syncReminders()
+    }
+
+    private func syncReminders() {
         guard !self.isImportingReminders else { return }
         self.isImportingReminders = true
         self.importMessage = nil

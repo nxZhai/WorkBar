@@ -24,8 +24,7 @@ enum RemindersImportError: LocalizedError {
     }
 }
 
-@MainActor
-final class RemindersImporter {
+final class RemindersImporter: @unchecked Sendable {
     private let eventStore = EKEventStore()
 
     func fetchIncompleteReminders() async throws -> [ReminderImportItem] {

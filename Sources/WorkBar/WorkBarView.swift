@@ -12,22 +12,7 @@ struct WorkBarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("WorkBar")
-                        .font(.headline)
-                    Text(self.model.engine.state.selectedDate)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Button(action: self.onQuit) {
-                    Image(systemName: "power")
-                }
-                .buttonStyle(.borderless)
-                .help("退出 WorkBar")
-            }
-
+            self.headerView
             self.summaryView
 
             if let errorMessage = self.model.errorMessage {
@@ -39,14 +24,35 @@ struct WorkBarView: View {
 
             Divider()
 
+            HStack {
+                Text("今日任务")
+                    .font(.headline)
+                Spacer()
+                Button {
+                    self.model.importReminders()
+                } label: {
+                    if self.model.isImportingReminders {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
+                .buttonStyle(.borderless)
+                .disabled(self.model.isImportingReminders)
+                .help("同步提醒事项")
+                .accessibilityLabel("同步提醒事项")
+            }
+
             if self.model.tasks.isEmpty {
                 ContentUnavailableView(
                     "今天还没有任务",
                     systemImage: "checklist",
-                    description: Text("添加一个任务，然后开始记录时间。"))
+                    description: Text("添加任务，或从提醒事项同步。"))
+                    .frame(maxWidth: .infinity, minHeight: 120)
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 8) {
+                    LazyVStack(spacing: 9) {
                         ForEach(self.model.tasks) { task in
                             TaskRow(
                                 task: task,
@@ -56,53 +62,45 @@ struct WorkBarView: View {
                         }
                     }
                 }
+                .frame(maxHeight: 300)
+                .scrollIndicators(.hidden)
             }
 
-            HStack {
+            HStack(spacing: 10) {
                 Button {
                     self.showingAddTask = true
                 } label: {
                     Label("添加任务", systemImage: "plus")
                 }
+                .buttonStyle(.borderedProminent)
                 .keyboardShortcut("n")
 
                 Button {
                     self.showingBudgetEditor = true
                 } label: {
-                    Label("今日预算", systemImage: "clock")
+                    Label("预算", systemImage: "clock")
                 }
+                .buttonStyle(.bordered)
 
                 Button {
                     self.showingHistory = true
                 } label: {
                     Label("历史", systemImage: "calendar")
                 }
+                .buttonStyle(.bordered)
 
                 Spacer()
             }
 
-            Button {
-                self.model.importReminders()
-            } label: {
-                if self.model.isImportingReminders {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("正在读取提醒事项…")
-                } else {
-                    Label("从提醒事项导入未完成任务", systemImage: "checklist")
-                }
-            }
-            .disabled(self.model.isImportingReminders)
-            .help("只导入新的未完成提醒事项，不会修改提醒事项")
-
             if let importMessage = self.model.importMessage {
-                Text(importMessage)
+                Label(importMessage, systemImage: "checkmark.circle")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(14)
-        .frame(width: 380, height: 460)
+        .padding(18)
+        .frame(width: 420, height: 580)
+        .background(.regularMaterial)
         .sheet(isPresented: self.$showingAddTask) {
             TaskEditorView(title: "添加任务", onSave: { title, minutes in
                 self.model.addTask(title: title, budgetMinutes: minutes)
@@ -132,28 +130,66 @@ struct WorkBarView: View {
         }
     }
 
+    private var headerView: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "hourglass")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 34, height: 34)
+                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 10))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("专注工作台")
+                    .font(.title3.weight(.semibold))
+                Text(self.model.engine.state.selectedDate)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button(action: self.onQuit) {
+                Image(systemName: "power")
+            }
+            .buttonStyle(.borderless)
+            .help("退出 WorkBar")
+            .accessibilityLabel("退出 WorkBar")
+        }
+    }
+
     private var summaryView: some View {
         let summary = self.model.summary
-        return VStack(alignment: .leading, spacing: 6) {
+        let progress = min(summary.totalBudgetSeconds, summary.elapsedSeconds)
+        return VStack(alignment: .leading, spacing: 13) {
             HStack {
-                Text("今日工作预算")
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text(workBarDuration(summary.totalBudgetSeconds))
-                    .fontWeight(.semibold)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("今日工作预算")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text(workBarDuration(summary.totalBudgetSeconds))
+                        .font(.title2.weight(.semibold))
+                        .monospacedDigit()
+                }
+                Spacer(minLength: 12)
+                ProgressView(value: progress, total: max(1, summary.totalBudgetSeconds))
+                    .progressViewStyle(.circular)
+                    .tint(.accentColor)
+                    .frame(width: 34, height: 34)
             }
             HStack(spacing: 12) {
-                Text("已用 \(workBarDuration(summary.elapsedSeconds))")
+                Label("已用 \(workBarDuration(summary.elapsedSeconds))", systemImage: "play.fill")
                 if summary.overAllocatedSeconds > 0 {
-                    Text("超额 \(workBarDuration(summary.overAllocatedSeconds))")
+                    Label("超额 \(workBarDuration(summary.overAllocatedSeconds))", systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                 } else {
-                    Text("未分配 \(workBarDuration(summary.unallocatedSeconds))")
+                    Label("未分配 \(workBarDuration(summary.unallocatedSeconds))", systemImage: "square.dashed")
                         .foregroundStyle(.secondary)
                 }
             }
             .font(.caption)
         }
+        .padding(15)
+        .background(Color.accentColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 16))
     }
 }
 
@@ -215,6 +251,7 @@ private struct TaskRow: View {
                     self.model.setCompleted(task.status != .completed, taskID: task.id)
                 } label: {
                     Image(systemName: task.status == .completed ? "checkmark.circle.fill" : "circle")
+                        .font(.title3)
                         .foregroundStyle(task.status == .completed ? .green : .secondary)
                 }
                 .buttonStyle(.borderless)
@@ -224,7 +261,7 @@ private struct TaskRow: View {
                     Text(task.title)
                         .fontWeight(self.model.isActive(task.id) ? .semibold : .regular)
                         .strikethrough(task.status == .completed)
-                        .lineLimit(1)
+                        .lineLimit(2)
                     Text("预算 \(workBarDuration(task.budgetSeconds)) · 已用 \(workBarDuration(self.model.elapsed(for: task.id)))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -233,7 +270,7 @@ private struct TaskRow: View {
                 Spacer()
 
                 Text(workBarRemaining(self.model.remaining(for: task.id)))
-                    .font(.system(.caption, design: .monospaced))
+                    .font(.system(.callout, design: .monospaced).weight(.medium))
                     .foregroundStyle(self.model.remaining(for: task.id) < 0 ? .orange : .secondary)
 
                 Button {
@@ -264,10 +301,21 @@ private struct TaskRow: View {
                 ProgressView(
                     value: min(1, max(0, self.model.elapsed(for: task.id) / task.budgetSeconds)))
                     .tint(self.model.remaining(for: task.id) < 0 ? .orange : .accentColor)
+                    .controlSize(.small)
             }
         }
-        .padding(9)
-        .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 9))
+        .padding(12)
+        .background(
+            self.model.isActive(task.id)
+                ? Color.accentColor.opacity(0.12)
+                : Color.primary.opacity(0.045),
+            in: RoundedRectangle(cornerRadius: 14))
+        .overlay {
+            if self.model.isActive(task.id) {
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.accentColor.opacity(0.45), lineWidth: 1)
+            }
+        }
         .confirmationDialog(
             "删除这个任务？",
             isPresented: self.$showingDeleteConfirmation,

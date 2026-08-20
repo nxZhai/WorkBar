@@ -40,7 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.popover = NSPopover()
         self.popover.behavior = .transient
         self.popover.animates = true
-        self.popover.contentSize = NSSize(width: 380, height: 460)
+        self.popover.contentSize = NSSize(width: 420, height: 580)
         self.popover.contentViewController = NSHostingController(
             rootView: WorkBarView(
                 model: self.model,
