@@ -14,7 +14,9 @@ final class WorkBarModel {
 
     private let store: StateStore
     private let remindersImporter = RemindersImporter()
+    private let reminderRefreshInterval: TimeInterval = 15 * 60
     private var ticker: Timer?
+    private var lastReminderSyncAt: Date?
     private var persistenceDisabled = false
 
     init(now: Date = Date(), store: StateStore = StateStore()) {
@@ -130,7 +132,7 @@ final class WorkBarModel {
         self.persist()
     }
 
-    func importReminders() {
+    func refreshReminders() {
         self.syncReminders()
     }
 
@@ -141,16 +143,26 @@ final class WorkBarModel {
     private func syncReminders() {
         guard !self.isImportingReminders else { return }
         self.isImportingReminders = true
+        self.lastReminderSyncAt = Date()
         self.importMessage = nil
         Task { @MainActor [weak self] in
             guard let self else { return }
             defer { self.isImportingReminders = false }
             do {
                 let reminders = try await self.remindersImporter.fetchIncompleteReminders()
-                let existingIDs = Set(self.engine.today.tasks.compactMap(\.externalID))
                 var added = 0
-                for reminder in reminders where !existingIDs.contains(reminder.id) {
-                    if self.engine.addTask(
+                var updated = 0
+                for reminder in reminders {
+                    if let task = self.engine.today.tasks.first(where: { $0.externalID == reminder.id }) {
+                        if task.title != reminder.title,
+                           self.engine.updateTask(
+                               id: task.id,
+                               title: reminder.title,
+                               budgetSeconds: task.budgetSeconds)
+                        {
+                            updated += 1
+                        }
+                    } else if self.engine.addTask(
                         title: reminder.title,
                         budgetSeconds: 30 * 60,
                         externalID: reminder.id) != nil
@@ -158,12 +170,14 @@ final class WorkBarModel {
                         added += 1
                     }
                 }
-                if added > 0 {
+                if added > 0 || updated > 0 {
                     self.persist()
                 }
-                self.importMessage = added == 0
-                    ? "没有新的未完成提醒事项。"
-                    : "已导入 \(added) 个提醒事项，默认预算 30 分钟。"
+                self.importMessage = if added == 0, updated == 0 {
+                    "提醒事项已是最新。"
+                } else {
+                    "同步完成：新增 \(added) 项，更新 \(updated) 项。"
+                }
                 self.onChange?()
             } catch {
                 self.errorMessage = error.localizedDescription
@@ -202,6 +216,11 @@ final class WorkBarModel {
             self.persist()
         }
         self.now = current
+        if let lastSync = self.lastReminderSyncAt,
+           current.timeIntervalSince(lastSync) >= self.reminderRefreshInterval
+        {
+            self.syncReminders()
+        }
         self.onChange?()
     }
 

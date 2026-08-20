@@ -119,3 +119,22 @@ func importedTaskKeepsExternalReminderIdentifier() {
         externalID: "reminder-123")!
     #expect(engine.today.tasks.first(where: { $0.id == taskID })?.externalID == "reminder-123")
 }
+
+@Test
+func updatingImportedTaskTitleKeepsBudgetAndElapsedTime() {
+    var engine = TimerEngine(now: start, calendar: calendar)
+    let taskID = engine.addTask(
+        title: "Old reminder title",
+        budgetSeconds: 30 * 60,
+        externalID: "reminder-123")!
+    let started = engine.start(taskID: taskID, at: start)
+    #expect(started)
+    engine.pause(at: start.addingTimeInterval(45))
+
+    let updated = engine.updateTask(id: taskID, title: "Updated reminder title", budgetSeconds: 30 * 60)
+    #expect(updated)
+    let task = engine.today.tasks.first(where: { $0.id == taskID })
+    #expect(task?.title == "Updated reminder title")
+    #expect(task?.budgetSeconds == 1_800.0)
+    #expect(task?.elapsedSeconds == 45)
+}

@@ -29,19 +29,19 @@ struct WorkBarView: View {
                     .font(.headline)
                 Spacer()
                 Button {
-                    self.model.importReminders()
+                    self.model.refreshReminders()
                 } label: {
                     if self.model.isImportingReminders {
                         ProgressView()
                             .controlSize(.small)
                     } else {
-                        Image(systemName: "arrow.clockwise")
+                        Label("刷新", systemImage: "arrow.clockwise")
                     }
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.bordered)
                 .disabled(self.model.isImportingReminders)
-                .help("同步提醒事项")
-                .accessibilityLabel("同步提醒事项")
+                .help("刷新提醒事项")
+                .accessibilityLabel("刷新提醒事项")
             }
 
             if self.model.tasks.isEmpty {
