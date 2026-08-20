@@ -44,5 +44,8 @@ cat > "$app_dir/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
-codesign --force --deep --sign - "$app_dir"
+# Keep the ad-hoc code identity stable across rebuilds so macOS can remember
+# the Reminders permission for this bundle instead of binding it to each hash.
+printf '%s\n' 'designated => identifier "com.nxzhai.workbar"' \
+    | codesign --force --deep --sign - --requirements - "$app_dir"
 echo "Built $app_dir"

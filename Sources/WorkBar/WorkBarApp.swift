@@ -12,12 +12,18 @@ struct WorkBarApp: App {
     }
 }
 
+private final class WorkBarPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+}
+
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
-    private var popover: NSPopover!
+    private var panel: WorkBarPanel!
     private var model: WorkBarModel!
     private var sleepObserver: NSObjectProtocol?
+    private var outsideClickMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -34,17 +40,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.imagePosition = .imageOnly
             button.setAccessibilityLabel("打开 WorkBar")
             button.target = self
-            button.action = #selector(self.togglePopover)
+            button.action = #selector(self.togglePanel)
         }
 
-        self.popover = NSPopover()
-        self.popover.behavior = .transient
-        self.popover.animates = true
-        self.popover.contentSize = NSSize(width: 420, height: 580)
-        self.popover.contentViewController = NSHostingController(
+        self.panel = WorkBarPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 580),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: true)
+        self.panel.isFloatingPanel = true
+        self.panel.level = .statusBar
+        self.panel.backgroundColor = .clear
+        self.panel.isOpaque = false
+        self.panel.hasShadow = true
+        self.panel.hidesOnDeactivate = true
+        self.panel.isReleasedWhenClosed = false
+        self.panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        self.panel.contentViewController = NSHostingController(
             rootView: WorkBarView(
                 model: self.model,
                 onQuit: { NSApp.terminate(nil) }))
+        self.panel.contentView?.wantsLayer = true
+        self.panel.contentView?.layer?.cornerRadius = 18
+        self.panel.contentView?.layer?.masksToBounds = true
         self.updateStatusItem()
 
         self.sleepObserver = NSWorkspace.shared.notificationCenter.addObserver(
@@ -59,21 +77,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         self.model.shutdown()
+        self.closePanel()
         if let sleepObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(sleepObserver)
         }
     }
 
-    @objc private func togglePopover() {
+    @objc private func togglePanel() {
         guard let button = self.statusItem.button else { return }
-        if self.popover.isShown {
-            self.popover.performClose(nil)
+        if self.panel.isVisible {
+            self.closePanel()
         } else {
-            self.popover.show(
-                relativeTo: button.bounds,
-                of: button,
-                preferredEdge: .minY)
-            self.popover.contentViewController?.view.window?.makeKey()
+            self.showPanel(anchor: button)
+        }
+    }
+
+    private func showPanel(anchor button: NSStatusBarButton) {
+        guard let buttonWindow = button.window else { return }
+        let buttonFrame = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
+        let panelSize = self.panel.frame.size
+        let visibleFrame = buttonWindow.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? .zero
+        let x = min(
+            max(buttonFrame.midX - panelSize.width / 2, visibleFrame.minX + 8),
+            visibleFrame.maxX - panelSize.width - 8)
+        let y = max(visibleFrame.minY + 8, buttonFrame.minY - panelSize.height - 8)
+
+        self.panel.setFrameOrigin(NSPoint(x: x, y: y))
+        self.panel.orderFrontRegardless()
+        self.panel.makeKey()
+        self.outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(
+            matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+                guard let self, !self.panel.frame.contains(NSEvent.mouseLocation) else { return }
+                self.closePanel()
+            }
+    }
+
+    private func closePanel() {
+        self.panel?.orderOut(nil)
+        if let outsideClickMonitor {
+            NSEvent.removeMonitor(outsideClickMonitor)
+            self.outsideClickMonitor = nil
         }
     }
 

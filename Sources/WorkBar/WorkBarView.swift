@@ -243,6 +243,7 @@ private struct TaskRow: View {
     let index: Int
     let onEdit: () -> Void
     @State private var showingDeleteConfirmation = false
+    @State private var isExpanded = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -257,15 +258,31 @@ private struct TaskRow: View {
                 .buttonStyle(.borderless)
                 .accessibilityLabel(task.status == .completed ? "恢复任务" : "完成任务")
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(task.title)
-                        .fontWeight(self.model.isActive(task.id) ? .semibold : .regular)
-                        .strikethrough(task.status == .completed)
-                        .lineLimit(2)
-                    Text("预算 \(workBarDuration(task.budgetSeconds)) · 已用 \(workBarDuration(self.model.elapsed(for: task.id)))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                Button {
+                    self.isExpanded.toggle()
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(alignment: .firstTextBaseline, spacing: 5) {
+                            Text(task.title)
+                                .fontWeight(self.model.isActive(task.id) ? .semibold : .regular)
+                                .strikethrough(task.status == .completed)
+                                .lineLimit(self.isExpanded ? nil : 2)
+                                .multilineTextAlignment(.leading)
+                            Image(systemName: self.isExpanded ? "chevron.up" : "chevron.down")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                        Text("预算 \(workBarDuration(task.budgetSeconds)) · 已用 \(workBarDuration(self.model.elapsed(for: task.id)))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .buttonStyle(.plain)
+                .layoutPriority(1)
+                .accessibilityLabel(task.title)
+                .accessibilityValue(self.isExpanded ? "已展开" : "已收起")
+                .accessibilityHint(self.isExpanded ? "点击收起完整内容" : "点击展开完整内容")
 
                 Spacer()
 
