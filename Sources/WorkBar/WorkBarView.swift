@@ -66,7 +66,7 @@ struct WorkBarView: View {
                 .scrollIndicators(.hidden)
             }
 
-            VStack(spacing: 4) {
+            VStack(spacing: 8) {
                 self.actionRow(title: "添加任务", systemImage: "plus") {
                     self.showingAddTask = true
                 }
@@ -188,7 +188,7 @@ struct WorkBarView: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 5)
+            .padding(.vertical, 4)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 10))
         }
@@ -250,13 +250,13 @@ private struct TaskRow: View {
     @State private var isExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 4) {
                 Button {
                     self.model.setCompleted(task.status != .completed, taskID: task.id)
                 } label: {
                     Image(systemName: task.status == .completed ? "checkmark.circle.fill" : "circle")
-                        .font(.title3)
+                        .font(.body)
                         .foregroundStyle(task.status == .completed ? .green : .secondary)
                 }
                 .buttonStyle(.borderless)
@@ -268,16 +268,17 @@ private struct TaskRow: View {
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(alignment: .firstTextBaseline, spacing: 5) {
                             Text(task.title)
+                                .font(.callout)
                                 .fontWeight(self.model.isActive(task.id) ? .semibold : .regular)
                                 .strikethrough(task.status == .completed)
                                 .lineLimit(self.isExpanded ? nil : 2)
                                 .multilineTextAlignment(.leading)
                             Image(systemName: self.isExpanded ? "chevron.up" : "chevron.down")
-                                .font(.caption2.weight(.semibold))
+                                .font(.caption2.weight(.medium))
                                 .foregroundStyle(.secondary)
                         }
                         Text("预算 \(workBarDuration(task.budgetSeconds)) · 已用 \(workBarDuration(self.model.elapsed(for: task.id)))")
-                            .font(.caption)
+                            .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -291,7 +292,7 @@ private struct TaskRow: View {
                 Spacer()
 
                 Text(workBarRemaining(self.model.remaining(for: task.id)))
-                    .font(.system(.callout, design: .monospaced).weight(.medium))
+                    .font(.system(.caption, design: .monospaced).weight(.medium))
                     .foregroundStyle(self.model.remaining(for: task.id) < 0 ? .orange : .secondary)
 
                 Button {
@@ -319,7 +320,7 @@ private struct TaskRow: View {
             }
 
         }
-        .padding(9)
+        .padding(6)
         .background {
             GeometryReader { proxy in
                 let shape = RoundedRectangle(cornerRadius: 11)
