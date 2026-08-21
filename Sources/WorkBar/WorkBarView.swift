@@ -48,7 +48,7 @@ struct WorkBarView: View {
             }
         }
         .padding(.vertical, 10)
-        .frame(width: 392, height: 560)
+        .frame(width: 392, height: 590)
         .background(.ultraThinMaterial)
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -106,7 +106,6 @@ struct WorkBarView: View {
 
     private var summaryView: some View {
         let summary = self.model.summary
-        let progress = min(summary.totalBudgetSeconds, summary.elapsedSeconds)
         return VStack(alignment: .leading, spacing: 9) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
@@ -126,10 +125,18 @@ struct WorkBarView: View {
                         .font(.system(.body, design: .monospaced).weight(.medium))
                 }
             }
-            ProgressView(value: progress, total: max(1, summary.totalBudgetSeconds))
-                .progressViewStyle(.linear)
-                .tint(.primary)
-                .scaleEffect(x: 1, y: 0.7, anchor: .center)
+            VStack(spacing: 7) {
+                self.summaryProgress(
+                    title: "预算分配",
+                    value: summary.assignedBudgetSeconds,
+                    total: summary.totalBudgetSeconds,
+                    tint: summary.overAllocatedSeconds > 0 ? .orange : .primary)
+                self.summaryProgress(
+                    title: "实际使用",
+                    value: summary.elapsedSeconds,
+                    total: summary.totalBudgetSeconds,
+                    tint: summary.elapsedSeconds > summary.totalBudgetSeconds ? .orange : .primary)
+            }
             HStack(spacing: 0) {
                 self.summaryMetric("已分配", workBarDuration(summary.assignedBudgetSeconds))
                 Divider()
@@ -174,9 +181,12 @@ struct WorkBarView: View {
 
             if self.model.tasks.isEmpty {
                 ContentUnavailableView(
-                    "今天还没有任务",
+                    self.model.hasHiddenCompletedTasks ? "已隐藏已完成任务" : "今天还没有任务",
                     systemImage: "checklist",
-                    description: Text("请在提醒事项中添加任务，WorkBar 会自动同步。"))
+                    description: Text(
+                        self.model.hasHiddenCompletedTasks
+                            ? "打开“显示已完成任务”即可查看。"
+                            : "请在提醒事项中添加带预算前缀的任务，WorkBar 会自动同步。"))
                     .frame(maxWidth: .infinity, minHeight: 92)
                     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .overlay {
@@ -205,6 +215,12 @@ struct WorkBarView: View {
     private var footerView: some View {
         VStack(spacing: 8) {
             BudgetEditorView(model: self.model)
+            Toggle(
+                "显示已完成任务",
+                isOn: Binding(
+                    get: { self.model.showCompletedTasks },
+                    set: { self.model.setShowCompletedTasks($0) }))
+                .font(.callout)
             self.actionTile(title: "历史", systemImage: "calendar") {
                 self.showingHistory = true
             }
@@ -264,6 +280,24 @@ struct WorkBarView: View {
             Text(value)
                 .font(.system(.caption, design: .monospaced).weight(.medium))
                 .foregroundStyle(color ?? .primary)
+        }
+    }
+
+    private func summaryProgress(
+        title: String,
+        value: TimeInterval,
+        total: TimeInterval,
+        tint: Color
+    ) -> some View {
+        HStack(spacing: 8) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .frame(width: 48, alignment: .leading)
+            ProgressView(value: min(max(0, value), max(1, total)), total: max(1, total))
+                .progressViewStyle(.linear)
+                .tint(tint)
+                .scaleEffect(x: 1, y: 0.7, anchor: .center)
         }
     }
 }
@@ -676,7 +710,7 @@ private struct TaskEditorView: View {
     init(
         title: String,
         initialTitle: String = "",
-        initialMinutes: Double = 30,
+        initialMinutes: Double = 0,
         titleEditable: Bool = true,
         onSave: @escaping (String, Double) -> Void)
     {

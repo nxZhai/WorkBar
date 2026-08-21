@@ -123,6 +123,10 @@ public struct TimerEngine: Sendable {
         self.state.dayPlans[plan.dateKey] = plan
     }
 
+    public mutating func setShowCompletedTasks(_ show: Bool) {
+        self.state.showCompletedTasks = show
+    }
+
     public mutating func start(taskID: UUID, at now: Date) -> Bool {
         self.settleActive(at: now)
         let dayKey = WorkBarDate.key(for: now, calendar: self.calendar)

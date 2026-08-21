@@ -155,3 +155,28 @@ func updatingImportedTaskTitleKeepsBudgetAndElapsedTime() {
     #expect(task?.budgetSeconds == 1_800.0)
     #expect(task?.elapsedSeconds == 45)
 }
+
+@Test
+func reminderTaskParserRequiresSupportedBudgetPrefix() throws {
+    let hour = try #require(ReminderTaskParser.parse("[1h] English"))
+    #expect(hour.title == "English")
+    #expect(hour.budgetSeconds == 3_600)
+
+    let minutes = try #require(ReminderTaskParser.parse("[30m] Code"))
+    #expect(minutes.budgetSeconds == 1_800)
+
+    let mixed = try #require(ReminderTaskParser.parse("[2h15m] Review"))
+    #expect(mixed.budgetSeconds == 8_100)
+
+    #expect(ReminderTaskParser.parse("English") == nil)
+    #expect(ReminderTaskParser.parse("[1h30] Invalid") == nil)
+    #expect(ReminderTaskParser.parse("[1h]") == nil)
+    #expect(ReminderTaskParser.parse("[999999999999999999999h] Invalid") == nil)
+}
+
+@Test
+func olderStateDefaultsToShowingCompletedTasks() throws {
+    let data = Data(#"{"schemaVersion":1,"selectedDate":"2026-08-21","dayPlans":{},"activeTimer":null}"#.utf8)
+    let state = try JSONDecoder().decode(AppState.self, from: data)
+    #expect(state.showCompletedTasks)
+}

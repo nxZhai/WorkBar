@@ -44,7 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         self.panel = WorkBarPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 392, height: 560),
+            contentRect: NSRect(x: 0, y: 0, width: 392, height: 590),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: true)

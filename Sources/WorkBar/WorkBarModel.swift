@@ -49,6 +49,15 @@ final class WorkBarModel {
 
     var tasks: [TaskItem] {
         self.engine.today.tasks.sorted { $0.sortOrder < $1.sortOrder }
+            .filter { self.engine.state.showCompletedTasks || $0.status != .completed }
+    }
+
+    var showCompletedTasks: Bool {
+        self.engine.state.showCompletedTasks
+    }
+
+    var hasHiddenCompletedTasks: Bool {
+        !self.showCompletedTasks && self.engine.today.tasks.contains { $0.status == .completed }
     }
 
     var summary: DaySummary {
@@ -154,6 +163,12 @@ final class WorkBarModel {
         }
     }
 
+    func setShowCompletedTasks(_ show: Bool) {
+        guard self.showCompletedTasks != show else { return }
+        self.engine.setShowCompletedTasks(show)
+        self.persist()
+    }
+
     func refreshReminders() {
         self.syncReminders()
     }
@@ -186,7 +201,7 @@ final class WorkBarModel {
                         }
                     } else if self.engine.addTask(
                         title: reminder.title,
-                        budgetSeconds: 30 * 60,
+                        budgetSeconds: reminder.budgetSeconds,
                         externalID: reminder.id) != nil
                     {
                         added += 1

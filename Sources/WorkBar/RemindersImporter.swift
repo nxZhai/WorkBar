@@ -1,9 +1,11 @@
 import EventKit
 import Foundation
+import WorkBarCore
 
 struct ReminderImportItem: Identifiable, Sendable {
     let id: String
     let title: String
+    let budgetSeconds: TimeInterval
     let listTitle: String
 }
 
@@ -66,11 +68,11 @@ final class RemindersImporter: @unchecked Sendable {
             self.eventStore.fetchReminders(matching: predicate) { reminders in
                 let items = (reminders ?? []).compactMap { reminder -> ReminderImportItem? in
                     let identifier = reminder.calendarItemIdentifier
-                    guard !reminder.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    else { return nil }
+                    guard let parsed = ReminderTaskParser.parse(reminder.title) else { return nil }
                     return ReminderImportItem(
                         id: identifier,
-                        title: reminder.title,
+                        title: parsed.title,
+                        budgetSeconds: parsed.budgetSeconds,
                         listTitle: reminder.calendar?.title ?? "")
                 }
                 continuation.resume(returning: items)
