@@ -12,11 +12,11 @@
 [![GitHub](https://img.shields.io/badge/GitHub-nxZhai%2FWorkBar-0a0a0c?style=flat-square&logo=github)](https://github.com/nxZhai/WorkBar)
 
 <p align="center">
-  <img src="docs/images/workbar-panel-prototype.png" alt="WorkBar 菜单栏面板原型" width="420">
+  <img src="docs/images/workbar-panel-prototype.png" alt="WorkBar 当前菜单栏面板" width="420">
 </p>
 
 <p align="center">
-  <em>界面示意：透明圆角面板、今日预算、任务计时和纵向操作列表。</em>
+  <em>当前界面：透明圆角面板、今日预算、提醒事项任务和内联预算编辑。</em>
 </p>
 
 WorkBar 参考 [CodexBar](https://github.com/steipete/CodexBar/) 的 macOS 菜单栏承载方式和 README 信息组织方式，只借鉴原生技术路线，不复制其业务、代码或素材。
@@ -49,7 +49,7 @@ flowchart LR
 | 今日预算 | 设置当天总工作时间，显示已分配、未分配或超额分配。 |
 | 独立任务沙漏 | 每个任务有自己的预算、已用和剩余时间；同一时刻只运行一个任务。 |
 | 开始 / 暂停 / 切换 | 切换任务前先结算当前任务，暂停后可以继续累计。 |
-| 任务管理 | 添加、编辑、排序、删除和完成今日任务。 |
+| 任务管理 | 从提醒事项同步任务，并支持编辑、排序、删除和完成。 |
 | 进度反馈 | 任务卡片背景色表达剩余时间，超时后继续计时并显示超时状态。 |
 | 长内容展开 | 长任务标题点击后展开完整内容，再次点击收起。 |
 | 提醒事项同步 | 启动同步、顶部刷新、每 15 分钟自动同步；完成状态支持写回。 |
@@ -60,8 +60,8 @@ flowchart LR
 
 - 常驻 macOS 菜单栏，不显示 Dock 图标。
 - 点击 hourglass 图标打开无箭头的透明圆角面板。
-- 面板底部使用纵向操作列表：`添加任务`、`今日预算`、`历史`。
-- 任务行采用“左侧可伸缩内容 + 右侧固定控制区”，长标题不会挤压开始/暂停和菜单按钮。
+- 面板底部使用纵向操作列表：内联编辑`今日预算`、查看`历史`。
+- 任务行采用“左侧可伸缩内容 + 右侧固定控制区”，长标题不会挤压开始/暂停和删除按钮。
 - 面板关闭后可以再次从菜单栏打开；点击外部区域会关闭面板。
 
 ## 安装与运行
@@ -94,7 +94,7 @@ open WorkBar.app
 1. 点击菜单栏中的 WorkBar hourglass 图标。
 2. macOS 首次访问提醒事项时，允许 WorkBar 使用 Reminders Full Access。
 3. 点击任务区域顶部的刷新按钮同步未完成提醒事项。
-4. 设置今日总预算，或直接为任务调整预算。
+4. 在主界面直接修改今日预算（单位为分钟），WorkBar 会自动保存。
 5. 点击任务行的开始按钮开始计时。
 6. 完成从提醒事项导入的任务后，WorkBar 会同步更新原提醒事项。
 
@@ -167,7 +167,7 @@ open WorkBar.app
 - 提醒事项权限、刷新、自动同步和完成状态写回正常。
 - 睡眠、退出重开和跨日不会错误增加工时。
 
-更完整的项目规则见 [AGENTS.md](AGENTS.md)，开发路线见 [DevelopPlan.md](DevelopPlan.md)。
+更完整的项目规则见 [AGENTS.md](../AGENTS.md)，开发路线见 [DevelopPlan.md](../DevelopPlan.md)。
 
 ## 当前边界
 

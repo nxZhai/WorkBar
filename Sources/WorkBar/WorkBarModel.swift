@@ -9,6 +9,7 @@ final class WorkBarModel {
     var now: Date
     var errorMessage: String?
     var importMessage: String?
+    var budgetUpdateMessage: String?
     var isImportingReminders = false
     var onChange: (@MainActor () -> Void)?
 
@@ -134,15 +135,23 @@ final class WorkBarModel {
         }
     }
 
-    func moveTask(_ taskID: UUID, by offset: Int) {
-        guard let index = self.tasks.firstIndex(where: { $0.id == taskID }) else { return }
-        guard self.engine.moveTask(id: taskID, to: index + offset) else { return }
+    func moveTask(_ taskID: UUID, before targetID: UUID) {
+        guard self.engine.moveTask(id: taskID, before: targetID) else { return }
+        self.persist()
+    }
+
+    func moveTask(_ taskID: UUID, after targetID: UUID) {
+        guard self.engine.moveTask(id: taskID, after: targetID) else { return }
         self.persist()
     }
 
     func setTotalBudget(minutes: Double) {
-        self.engine.setTotalBudget(seconds: max(0, minutes) * 60)
-        self.persist()
+        let sanitizedMinutes = max(0, minutes)
+        guard sanitizedMinutes * 60 != self.engine.today.totalBudgetSeconds else { return }
+        self.engine.setTotalBudget(seconds: sanitizedMinutes * 60)
+        if self.persist() {
+            self.budgetUpdateMessage = "预算已更新。"
+        }
     }
 
     func refreshReminders() {
@@ -237,15 +246,19 @@ final class WorkBarModel {
         self.onChange?()
     }
 
-    private func persist() {
+    @discardableResult
+    private func persist() -> Bool {
         if !self.persistenceDisabled {
             do {
                 try self.store.save(self.engine.state)
                 self.errorMessage = nil
+                self.onChange?()
+                return true
             } catch {
                 self.errorMessage = error.localizedDescription
             }
         }
         self.onChange?()
+        return false
     }
 }

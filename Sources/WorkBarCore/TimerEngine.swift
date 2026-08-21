@@ -96,6 +96,27 @@ public struct TimerEngine: Sendable {
         return true
     }
 
+    public mutating func moveTask(id: UUID, before targetID: UUID) -> Bool {
+        let plan = self.ensureSelectedPlan()
+        guard let source = plan.tasks.firstIndex(where: { $0.id == id }),
+              let target = plan.tasks.firstIndex(where: { $0.id == targetID }),
+              source != target
+        else { return false }
+        let destination = source < target ? target - 1 : target
+        guard source != destination else { return false }
+        return self.moveTask(id: id, to: destination)
+    }
+
+    public mutating func moveTask(id: UUID, after targetID: UUID) -> Bool {
+        let plan = self.ensureSelectedPlan()
+        guard let source = plan.tasks.firstIndex(where: { $0.id == id }),
+              let target = plan.tasks.firstIndex(where: { $0.id == targetID }),
+              source != target
+        else { return false }
+        let destination = source < target ? target : target + 1
+        return self.moveTask(id: id, to: destination)
+    }
+
     public mutating func setTotalBudget(seconds: TimeInterval) {
         var plan = self.ensureSelectedPlan()
         plan.totalBudgetSeconds = max(0, seconds)

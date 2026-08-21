@@ -5,95 +5,56 @@ struct WorkBarView: View {
     @Bindable var model: WorkBarModel
     let onQuit: () -> Void
 
-    @State private var showingAddTask = false
-    @State private var showingBudgetEditor = false
     @State private var showingHistory = false
     @State private var editingTask: TaskItem?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 0) {
             self.headerView
+                .padding(.horizontal, 16)
             self.summaryView
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
 
             if let errorMessage = self.model.errorMessage {
                 Label(errorMessage, systemImage: "exclamationmark.triangle")
                     .font(.caption)
                     .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 9)
             }
 
-            Divider()
+            self.taskSection
 
-            HStack {
-                Text("今日任务")
-                    .font(.headline)
-                Spacer()
-                Button {
-                    self.model.refreshReminders()
-                } label: {
-                    if self.model.isImportingReminders {
-                        ProgressView()
-                            .controlSize(.small)
-                    } else {
-                        Label("刷新", systemImage: "arrow.clockwise")
-                    }
-                }
-                .buttonStyle(.bordered)
-                .disabled(self.model.isImportingReminders)
-                .help("刷新提醒事项")
-                .accessibilityLabel("刷新提醒事项")
-            }
-
-            if self.model.tasks.isEmpty {
-                ContentUnavailableView(
-                    "今天还没有任务",
-                    systemImage: "checklist",
-                    description: Text("添加任务，或从提醒事项同步。"))
-                    .frame(maxWidth: .infinity, minHeight: 80)
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 6) {
-                        ForEach(self.model.tasks) { task in
-                            TaskRow(
-                                task: task,
-                                model: self.model,
-                                index: self.model.tasks.firstIndex(where: { $0.id == task.id }) ?? 0,
-                                onEdit: { self.editingTask = task })
-                        }
-                    }
-                }
-                .frame(maxHeight: 190)
-                .scrollIndicators(.hidden)
-            }
-
-            VStack(spacing: 8) {
-                self.actionRow(title: "添加任务", systemImage: "plus") {
-                    self.showingAddTask = true
-                }
-                .keyboardShortcut("n")
-                self.actionRow(title: "今日预算", systemImage: "clock") {
-                    self.showingBudgetEditor = true
-                }
-                self.actionRow(title: "历史", systemImage: "calendar") {
-                    self.showingHistory = true
-                }
-            }
+            self.footerView
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
 
             if let importMessage = self.model.importMessage {
                 Label(importMessage, systemImage: "checkmark.circle")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+            }
+
+            if let budgetUpdateMessage = self.model.budgetUpdateMessage {
+                Label(budgetUpdateMessage, systemImage: "checkmark.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
             }
         }
-        .padding(12)
-        .frame(width: 380, height: 520)
+        .padding(.vertical, 10)
+        .frame(width: 392, height: 560)
         .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .sheet(isPresented: self.$showingAddTask) {
-            TaskEditorView(title: "添加任务", onSave: { title, minutes in
-                self.model.addTask(title: title, budgetMinutes: minutes)
-            })
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.white.opacity(0.18), lineWidth: 0.75)
         }
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .sheet(item: self.$editingTask) { task in
             TaskEditorView(
                 title: "编辑任务",
@@ -103,37 +64,43 @@ struct WorkBarView: View {
                     self.model.updateTask(id: task.id, title: title, budgetMinutes: minutes)
                 })
         }
-        .sheet(isPresented: self.$showingBudgetEditor) {
-            TaskEditorView(
-                title: "今日总预算",
-                initialTitle: "",
-                initialMinutes: self.model.engine.today.totalBudgetSeconds / 60,
-                titleEditable: false,
-                onSave: { _, minutes in
-                    self.model.setTotalBudget(minutes: minutes)
-                })
-        }
         .sheet(isPresented: self.$showingHistory) {
             HistoryView(plans: self.model.history)
         }
     }
 
     private var headerView: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Image(systemName: "hourglass")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.white)
-                .frame(width: 30, height: 30)
-                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 10))
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.background)
+                .frame(width: 32, height: 32)
+                .background(.primary.opacity(0.86), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-            Spacer()
-
-            Button(action: self.onQuit) {
-                Image(systemName: "power")
+            VStack(alignment: .leading, spacing: 1) {
+                Text("WorkBar")
+                    .font(.headline.weight(.semibold))
+                Text("今日工作计划")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            .buttonStyle(.borderless)
-            .help("退出 WorkBar")
-            .accessibilityLabel("退出 WorkBar")
+
+            Spacer(minLength: 8)
+
+            HStack(spacing: 3) {
+                self.utilityButton(
+                    systemImage: "arrow.clockwise",
+                    label: "刷新提醒事项",
+                    action: self.model.refreshReminders)
+                    .overlay {
+                        if self.model.isImportingReminders {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                    }
+                    .disabled(self.model.isImportingReminders)
+                self.utilityButton(systemImage: "power", label: "退出 WorkBar", action: self.onQuit)
+            }
         }
     }
 
@@ -143,57 +110,229 @@ struct WorkBarView: View {
         return VStack(alignment: .leading, spacing: 9) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("今日工作预算")
-                        .font(.subheadline)
+                    Text("今日预算")
+                        .font(.caption.weight(.medium))
                         .foregroundStyle(.secondary)
                     Text(workBarDuration(summary.totalBudgetSeconds))
-                        .font(.title2.weight(.semibold))
+                        .font(.system(size: 27, weight: .semibold, design: .rounded))
                         .monospacedDigit()
                 }
                 Spacer(minLength: 12)
-                ProgressView(value: progress, total: max(1, summary.totalBudgetSeconds))
-                    .progressViewStyle(.circular)
-                    .tint(.accentColor)
-                    .frame(width: 34, height: 34)
-            }
-            HStack(spacing: 12) {
-                Label("已用 \(workBarDuration(summary.elapsedSeconds))", systemImage: "play.fill")
-                if summary.overAllocatedSeconds > 0 {
-                    Label("超额 \(workBarDuration(summary.overAllocatedSeconds))", systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                } else {
-                    Label("未分配 \(workBarDuration(summary.unallocatedSeconds))", systemImage: "square.dashed")
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text("累计已用")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
+                    Text(workBarDuration(summary.elapsedSeconds))
+                        .font(.system(.body, design: .monospaced).weight(.medium))
                 }
             }
-            .font(.caption)
+            ProgressView(value: progress, total: max(1, summary.totalBudgetSeconds))
+                .progressViewStyle(.linear)
+                .tint(.primary)
+                .scaleEffect(x: 1, y: 0.7, anchor: .center)
+            HStack(spacing: 0) {
+                self.summaryMetric("已分配", workBarDuration(summary.assignedBudgetSeconds))
+                Divider()
+                    .frame(height: 22)
+                    .padding(.horizontal, 12)
+                if summary.overAllocatedSeconds > 0 {
+                    self.summaryMetric("超额", workBarDuration(summary.overAllocatedSeconds), color: .orange)
+                } else if summary.unallocatedSeconds > 0 {
+                    self.summaryMetric("未分配", workBarDuration(summary.unallocatedSeconds))
+                } else {
+                    self.summaryMetric("计划", "已分配完")
+                }
+            }
         }
-        .padding(12)
-        .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 13))
+        .padding(14)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.16), lineWidth: 0.75)
+        }
+        .shadow(color: .black.opacity(0.08), radius: 18, y: 8)
     }
 
-    private func actionRow(
+    private var taskSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("今日任务")
+                    .font(.headline.weight(.semibold))
+                Text("\(self.model.tasks.count)")
+                    .font(.system(.caption, design: .monospaced).weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(.primary.opacity(0.07), in: Capsule())
+                Spacer()
+                Text(self.model.isImportingReminders ? "同步中" : "提醒事项")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 15)
+
+            if self.model.tasks.isEmpty {
+                ContentUnavailableView(
+                    "今天还没有任务",
+                    systemImage: "checklist",
+                    description: Text("请在提醒事项中添加任务，WorkBar 会自动同步。"))
+                    .frame(maxWidth: .infinity, minHeight: 92)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 0.75)
+                    }
+                    .padding(.horizontal, 12)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 7) {
+                        ForEach(self.model.tasks) { task in
+                            TaskRow(
+                                task: task,
+                                model: self.model,
+                                onEdit: { self.editingTask = task })
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                }
+                .frame(maxHeight: 202)
+                .scrollIndicators(.hidden)
+            }
+        }
+    }
+
+    private var footerView: some View {
+        VStack(spacing: 8) {
+            BudgetEditorView(model: self.model)
+            self.actionTile(title: "历史", systemImage: "calendar") {
+                self.showingHistory = true
+            }
+        }
+    }
+
+    private func utilityButton(
+        systemImage: String,
+        label: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 13, weight: .semibold))
+                .frame(width: 28, height: 28)
+                .background(.primary.opacity(0.06), in: Circle())
+        }
+        .buttonStyle(.plain)
+        .help(label)
+        .accessibilityLabel(label)
+    }
+
+    private func actionTile(
         title: String,
         systemImage: String,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 10) {
+            HStack(spacing: 7) {
                 Image(systemName: systemImage)
-                    .frame(width: 20)
+                    .font(.system(size: 13, weight: .medium))
                 Text(title)
-                Spacer()
+                    .font(.callout.weight(.medium))
+                Spacer(minLength: 4)
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
+                    .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 4)
+            .padding(.vertical, 8)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 10))
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 0.75)
+            }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
+    }
+
+    private func summaryMetric(_ title: String, _ value: String, color: Color? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.system(.caption, design: .monospaced).weight(.medium))
+                .foregroundStyle(color ?? .primary)
+        }
+    }
+}
+
+private struct BudgetEditorView: View {
+    @Bindable var model: WorkBarModel
+    @State private var minutesText: String
+
+    init(model: WorkBarModel) {
+        self.model = model
+        self._minutesText = State(initialValue: Self.displayMinutes(model.engine.today.totalBudgetSeconds))
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "clock")
+                .font(.system(size: 13, weight: .medium))
+            Text("今日预算")
+                .font(.callout.weight(.medium))
+            Spacer(minLength: 8)
+            TextField("分钟", text: self.$minutesText)
+                .textFieldStyle(.plain)
+                .font(.system(.callout, design: .monospaced).weight(.medium))
+                .multilineTextAlignment(.trailing)
+                .frame(width: 58)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 4)
+                .background(.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .onChange(of: self.minutesText) { _, value in
+                    self.save(value)
+                }
+                .onSubmit {
+                    self.commit()
+                }
+            Text("分钟")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color.white.opacity(0.12), lineWidth: 0.75)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("今日预算，分钟")
+        .onChange(of: self.model.engine.state.selectedDate) { _, _ in
+            self.minutesText = Self.displayMinutes(self.model.engine.today.totalBudgetSeconds)
+        }
+    }
+
+    private func save(_ rawValue: String) {
+        guard let minutes = Double(rawValue), minutes.isFinite, minutes >= 0 else { return }
+        self.model.setTotalBudget(minutes: minutes)
+    }
+
+    private func commit() {
+        guard let minutes = Double(self.minutesText), minutes.isFinite, minutes >= 0 else {
+            self.minutesText = Self.displayMinutes(self.model.engine.today.totalBudgetSeconds)
+            return
+        }
+        self.model.setTotalBudget(minutes: minutes)
+        self.minutesText = Self.displayMinutes(minutes * 60)
+    }
+
+    private static func displayMinutes(_ seconds: TimeInterval) -> String {
+        String(Int(max(0, seconds).rounded(.down) / 60))
     }
 }
 
@@ -202,52 +341,133 @@ private struct HistoryView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("历史记录")
-                    .font(.headline)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("历史记录")
+                        .font(.title3.weight(.semibold))
+                    Text("每天的计划和实际用时")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Spacer()
                 Button("完成") { self.dismiss() }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
             }
+            .padding(.bottom, 16)
 
             if self.plans.isEmpty {
-                ContentUnavailableView("还没有历史记录", systemImage: "calendar")
+                VStack(spacing: 12) {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.system(size: 24, weight: .medium))
+                        .foregroundStyle(Color.accentColor)
+                        .frame(width: 56, height: 56)
+                        .background(Color.accentColor.opacity(0.12), in: Circle())
+                    Text("还没有历史记录")
+                        .font(.headline)
+                    Text("跨天后，WorkBar 会把每日计划保存在这里。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 8) {
+                    LazyVStack(spacing: 10) {
                         ForEach(self.plans, id: \.dateKey) { plan in
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack {
-                                    Text(plan.dateKey)
-                                        .fontWeight(.semibold)
-                                    Spacer()
-                                    Text("计划 \(workBarDuration(plan.totalBudgetSeconds))")
-                                        .foregroundStyle(.secondary)
+                            let elapsed = plan.tasks.reduce(0) { $0 + $1.elapsedSeconds }
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "calendar")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(Color.accentColor)
+                                        .frame(width: 28, height: 28)
+                                        .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(plan.dateKey)
+                                            .font(.callout.weight(.semibold))
+                                        Text("\(plan.tasks.count) 个任务")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer(minLength: 8)
+                                    VStack(alignment: .trailing, spacing: 2) {
+                                        Text("已用")
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                        Text(workBarDuration(elapsed))
+                                            .font(.system(.callout, design: .monospaced).weight(.medium))
+                                    }
                                 }
-                                Text("已用 \(workBarDuration(plan.tasks.reduce(0) { $0 + $1.elapsedSeconds })) · \(plan.tasks.count) 个任务")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                ProgressView(value: min(elapsed, plan.totalBudgetSeconds), total: max(1, plan.totalBudgetSeconds))
+                                    .tint(.accentColor)
+                                HStack {
+                                    Text("计划 \(workBarDuration(plan.totalBudgetSeconds))")
+                                    Spacer()
+                                    Text("完成率 \(historyCompletion(elapsed, budget: plan.totalBudgetSeconds))")
+                                }
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                             }
-                            .padding(9)
+                            .padding(12)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 9))
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(Color.white.opacity(0.16), lineWidth: 0.75)
+                            }
                         }
                     }
                 }
             }
         }
         .padding(16)
-        .frame(width: 330, height: 360)
+        .frame(width: 350, height: 390)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    private func historyCompletion(_ elapsed: TimeInterval, budget: TimeInterval) -> String {
+        guard budget > 0 else { return "—" }
+        return "\(Int(min(100, max(0, elapsed / budget * 100)).rounded()))%"
+    }
+}
+
+private struct TaskTitleHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+private struct TaskSingleLineHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+private struct TaskRowHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 
 private struct TaskRow: View {
     let task: TaskItem
     @Bindable var model: WorkBarModel
-    let index: Int
     let onEdit: () -> Void
     @State private var showingDeleteConfirmation = false
     @State private var isExpanded = false
+    @State private var isDropTarget = false
+    @State private var rowHeight: CGFloat = 0
+    @State private var titleHeight: CGFloat = 0
+    @State private var singleLineTitleHeight: CGFloat = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -262,34 +482,7 @@ private struct TaskRow: View {
                 .buttonStyle(.borderless)
                 .accessibilityLabel(task.status == .completed ? "恢复任务" : "完成任务")
 
-                Button {
-                    self.isExpanded.toggle()
-                } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(alignment: .firstTextBaseline, spacing: 5) {
-                            Text(task.title)
-                                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                                .font(.callout)
-                                .fontWeight(self.model.isActive(task.id) ? .semibold : .regular)
-                                .strikethrough(task.status == .completed)
-                                .lineLimit(self.isExpanded ? nil : 2)
-                                .multilineTextAlignment(.leading)
-                            Image(systemName: self.isExpanded ? "chevron.up" : "chevron.down")
-                                .font(.caption2.weight(.medium))
-                                .foregroundStyle(.secondary)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        Text("预算 \(workBarDuration(task.budgetSeconds)) · 已用 \(workBarDuration(self.model.elapsed(for: task.id)))")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .buttonStyle(.plain)
-                .layoutPriority(1)
-                .accessibilityLabel(task.title)
-                .accessibilityValue(self.isExpanded ? "已展开" : "已收起")
-                .accessibilityHint(self.isExpanded ? "点击收起完整内容" : "点击展开完整内容")
+                self.titleControl
 
                 HStack(spacing: 6) {
                     Text(workBarRemaining(self.model.remaining(for: task.id)))
@@ -306,42 +499,73 @@ private struct TaskRow: View {
                     .disabled(task.status == .completed)
                     .accessibilityLabel(self.model.isActive(task.id) ? "暂停任务" : "开始任务")
 
-                    Menu {
-                        Button("编辑", action: self.onEdit)
-                        Button("上移") { self.model.moveTask(task.id, by: -1) }
-                            .disabled(self.index == 0)
-                        Button("下移") { self.model.moveTask(task.id, by: 1) }
-                            .disabled(self.index == self.model.tasks.count - 1)
-                        Divider()
-                        Button("删除", role: .destructive) { self.showingDeleteConfirmation = true }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
+                    Button(action: self.onEdit) {
+                        Image(systemName: "pencil")
                     }
-                    .menuStyle(.borderlessButton)
-                    .accessibilityLabel("任务菜单")
+                    .buttonStyle(.borderless)
+                    .help("编辑任务")
+                    .accessibilityLabel("编辑任务")
+
+                    Button(role: .destructive) {
+                        self.showingDeleteConfirmation = true
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("删除任务")
+                    .accessibilityLabel("删除任务")
                 }
                 .fixedSize(horizontal: true, vertical: false)
             }
-
         }
-        .padding(6)
+        .onPreferenceChange(TaskTitleHeightKey.self) { height in
+            if !self.isExpanded {
+                self.titleHeight = height
+            }
+        }
+        .onPreferenceChange(TaskSingleLineHeightKey.self) { height in
+            self.singleLineTitleHeight = height
+        }
+        .onPreferenceChange(TaskRowHeightKey.self) { self.rowHeight = $0 }
+        .padding(7)
         .background {
             GeometryReader { proxy in
-                let shape = RoundedRectangle(cornerRadius: 11)
+                let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
                 ZStack(alignment: .leading) {
+                    shape.fill(.thinMaterial)
                     shape.fill(self.rowBackground)
                     shape.fill(self.progressColor.opacity(0.14))
                         .frame(width: proxy.size.width * self.remainingFraction)
                 }
                 .clipShape(shape)
+                .preference(key: TaskRowHeightKey.self, value: proxy.size.height)
             }
         }
         .overlay {
             if self.model.isActive(task.id) {
-                RoundedRectangle(cornerRadius: 11)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(Color.accentColor.opacity(0.45), lineWidth: 1)
+            } else if self.isDropTarget {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.accentColor.opacity(0.75), lineWidth: 1)
             }
         }
+        .opacity(task.status == .completed ? 0.7 : 1)
+        .draggable(task.id.uuidString)
+        .dropDestination(for: String.self) { items, location in
+            guard let sourceID = items.first.flatMap(UUID.init(uuidString:)), sourceID != task.id else {
+                return false
+            }
+            if location.y > self.rowHeight / 2 {
+                self.model.moveTask(sourceID, after: task.id)
+            } else {
+                self.model.moveTask(sourceID, before: task.id)
+            }
+            return true
+        } isTargeted: { isTargeted in
+            self.isDropTarget = isTargeted
+        }
+        .accessibilityHint("按住并拖动以调整任务顺序")
         .confirmationDialog(
             "删除这个任务？",
             isPresented: self.$showingDeleteConfirmation,
@@ -358,16 +582,86 @@ private struct TaskRow: View {
     }
 
     private var progressColor: Color {
-        self.model.remaining(for: task.id) < 0 ? .orange : .accentColor
+        self.model.remaining(for: task.id) < 0 ? .orange : .white
     }
 
     private var rowBackground: Color {
         if self.model.remaining(for: task.id) < 0 {
-            return .orange.opacity(0.10)
+            return .orange.opacity(0.08)
         }
         return self.model.isActive(task.id)
-            ? Color.accentColor.opacity(0.12)
-            : Color.primary.opacity(0.045)
+            ? Color.white.opacity(0.12)
+            : Color.white.opacity(0.08)
+    }
+
+    private var canExpand: Bool {
+        self.singleLineTitleHeight > 0
+            && self.titleHeight > self.singleLineTitleHeight * 1.35
+    }
+
+    @ViewBuilder
+    private var titleControl: some View {
+        if self.canExpand {
+            Button {
+                self.isExpanded.toggle()
+            } label: {
+                self.taskTitleContent
+            }
+            .buttonStyle(.plain)
+            .layoutPriority(1)
+            .accessibilityLabel(task.title)
+            .accessibilityValue(self.isExpanded ? "已展开" : "已收起")
+            .accessibilityHint(self.isExpanded ? "点击收起完整内容" : "点击展开完整内容")
+        } else {
+            self.taskTitleContent
+                .layoutPriority(1)
+                .accessibilityLabel(task.title)
+        }
+    }
+
+    private var taskTitleContent: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: 5) {
+                Text(task.title)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                    .font(.callout)
+                    .fontWeight(self.model.isActive(task.id) ? .semibold : .regular)
+                    .strikethrough(task.status == .completed)
+                    .lineLimit(self.isExpanded ? nil : 2)
+                    .multilineTextAlignment(.leading)
+                    .background {
+                        GeometryReader { proxy in
+                            Color.clear.preference(
+                                key: TaskTitleHeightKey.self,
+                                value: proxy.size.height)
+                        }
+                    }
+                if self.canExpand {
+                    Image(systemName: self.isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .topLeading) {
+                Text(task.title)
+                    .font(.callout)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .hidden()
+                    .background {
+                        GeometryReader { proxy in
+                            Color.clear.preference(
+                                key: TaskSingleLineHeightKey.self,
+                                value: proxy.size.height)
+                        }
+                    }
+            }
+            Text("预算 \(workBarDuration(task.budgetSeconds)) · 已用 \(workBarDuration(self.model.elapsed(for: task.id)))")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -441,8 +735,5 @@ private func workBarRemaining(_ seconds: TimeInterval) -> String {
     let hours = total / 3600
     let minutes = (total % 3600) / 60
     let remainingSeconds = total % 60
-    if hours > 0 {
-        return "\(sign)\(hours):\(String(format: "%02d", minutes))"
-    }
-    return "\(sign)\(minutes):\(String(format: "%02d", remainingSeconds))"
+    return "\(sign)\(String(format: "%02d:%02d:%02d", hours, minutes, remainingSeconds))"
 }

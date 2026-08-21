@@ -44,15 +44,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         self.panel = WorkBarPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 380, height: 520),
+            contentRect: NSRect(x: 0, y: 0, width: 392, height: 560),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: true)
+        self.panel.title = "WorkBar"
         self.panel.isFloatingPanel = true
         self.panel.level = .statusBar
         self.panel.backgroundColor = .clear
         self.panel.isOpaque = false
         self.panel.hasShadow = true
+        self.panel.titleVisibility = .hidden
+        self.panel.titlebarAppearsTransparent = true
         self.panel.hidesOnDeactivate = false
         self.panel.isReleasedWhenClosed = false
         self.panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -62,6 +65,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 onQuit: { NSApp.terminate(nil) }))
         self.panel.contentView?.wantsLayer = true
         self.panel.contentView?.layer?.cornerRadius = 18
+        self.panel.contentView?.layer?.cornerCurve = .continuous
+        self.panel.contentView?.layer?.backgroundColor = NSColor.clear.cgColor
         self.panel.contentView?.layer?.masksToBounds = true
         self.updateStatusItem()
 
@@ -139,11 +144,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let hours = total / 3600
         let minutes = (total % 3600) / 60
         let seconds = total % 60
-        let clock = if hours > 0 {
-            "\(hours):\(String(format: "%02d", minutes))"
-        } else {
-            "\(minutes):\(String(format: "%02d", seconds))"
-        }
+        let clock = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
         let prefix = remaining < 0 ? "+" : ""
         let title = String(task.title.prefix(12))
         button.title = "\(title) \(prefix)\(clock)"

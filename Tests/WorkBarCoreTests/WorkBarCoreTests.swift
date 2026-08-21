@@ -70,6 +70,23 @@ func completedTaskCannotStartAgain() {
 }
 
 @Test
+func movingTaskBeforeAnotherTaskReindexesThePlan() {
+    var engine = TimerEngine(now: start, calendar: calendar)
+    let first = engine.addTask(title: "First", budgetSeconds: 60)!
+    let second = engine.addTask(title: "Second", budgetSeconds: 60)!
+    let third = engine.addTask(title: "Third", budgetSeconds: 60)!
+
+    let moved = engine.moveTask(id: first, before: third)
+    #expect(moved)
+    #expect(engine.today.tasks.map(\.id) == [second, first, third])
+    #expect(engine.today.tasks.map(\.sortOrder) == [0, 1, 2])
+
+    let movedToEnd = engine.moveTask(id: first, after: third)
+    #expect(movedToEnd)
+    #expect(engine.today.tasks.map(\.id) == [second, third, first])
+}
+
+@Test
 func midnightStopsActiveTaskAndCreatesNextDayPlan() {
     let late = calendar.date(from: DateComponents(year: 2023, month: 11, day: 14, hour: 23, minute: 59, second: 50))!
     var engine = TimerEngine(now: late, calendar: calendar)
