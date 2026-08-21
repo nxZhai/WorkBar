@@ -2,6 +2,15 @@
 
 > 一个安静地待在 macOS 菜单栏里的本地专注计时器：把今天的工作预算分给任务，随时开始、暂停、切换，并把完成状态同步回提醒事项。
 
+[![macOS 14+](https://img.shields.io/badge/macOS-14%2B-0a0a0c?style=flat-square)](#安装与运行)
+[![Swift 6.2+](https://img.shields.io/badge/Swift-6.2%2B-F05138?style=flat-square&logo=swift&logoColor=white)](https://www.swift.org/)
+[![SwiftPM](https://img.shields.io/badge/build-SwiftPM-0a0a0c?style=flat-square)](#安装与运行)
+[![Swift Testing](https://img.shields.io/badge/tests-Swift%20Testing-6e5aff?style=flat-square)](#开发与验证)
+[![EventKit](https://img.shields.io/badge/sync-EventKit-16a085?style=flat-square)](#首次启动)
+[![Local only](https://img.shields.io/badge/privacy-local--only-16d3b4?style=flat-square)](#数据与隐私)
+[![Status: MVP](https://img.shields.io/badge/status-MVP-f39c12?style=flat-square)](#项目状态)
+[![GitHub](https://img.shields.io/badge/GitHub-nxZhai%2FWorkBar-0a0a0c?style=flat-square&logo=github)](https://github.com/nxZhai/WorkBar)
+
 <p align="center">
   <img src="docs/images/workbar-panel-prototype.png" alt="WorkBar 菜单栏面板原型" width="420">
 </p>
