@@ -26,7 +26,7 @@ WorkBar 把一天的可用时间拆成多个任务预算。每个任务都有自
 ## 先看界面
 
 <p align="center">
-  <img src="./docs/images/workbar-panel-prototype.png" width="760" alt="WorkBar 菜单栏面板：今日预算、任务列表、任务计时和历史入口">
+  <img src="./docs/images/workbar-panel-prototype.png" width="320" alt="WorkBar 菜单栏面板：今日预算、任务列表、任务计时和历史入口">
 </p>
 
 面板把最常用的动作放在一处：查看今日预算、开始或暂停任务、编辑预算、刷新提醒事项，以及查看历史。任务卡片会显示预算、已用和剩余；预算耗尽后仍会继续计时，并明确标出超时。
